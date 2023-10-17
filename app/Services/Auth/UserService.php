@@ -6,6 +6,7 @@ use App\Exceptions\CustomException;
 use App\Models\Auth\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class UserService
 {
@@ -15,7 +16,7 @@ class UserService
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password))
-            throw new CustomException('The provided credentials are incorrect.');
+            throw new CustomException('The provided credentials are incorrect.', 422);
 
         $token = $user->createToken($user->email)->plainTextToken;
 
@@ -30,6 +31,12 @@ class UserService
     // user logout
     public static function logout(Request $request)
     {
-        return $request->user()->currentAccessToken()->delete();
+        $token = $request->user()->currentAccessToken();
+
+        if ($token instanceof PersonalAccessToken) {
+            $token->delete();
+        }
+
+        return true;
     }
 }
